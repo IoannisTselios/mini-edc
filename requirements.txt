@@ -1,4 +1,5 @@
 Django>=5.0,<6.0
 pytest>=8.0
 pytest-django>=4.8
-dj-database-url>=2.2  # harmless now; handy later when you containerize
+dj-database-url>=2.2
+psycopg[binary]>=3.2
