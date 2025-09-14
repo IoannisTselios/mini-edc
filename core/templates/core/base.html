@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Mini EDC</title>
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    /* tiny, readable defaults */
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 1.5rem; }
+    a { text-decoration: none; }
+    table { border-collapse: collapse; width: 100%; margin: .75rem 0; }
+    td, th { border: 1px solid #ddd; padding: .5rem; text-align: left; }
+    .crumbs a { color: #333; }
+    .crumbs { margin-bottom: 1rem; color: #666; font-size: 0.95rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><a href="{% url 'core:dashboard' %}">Mini EDC</a></h1>
+    <div class="crumbs">{% block breadcrumbs %}{% endblock %}</div>
+  </header>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

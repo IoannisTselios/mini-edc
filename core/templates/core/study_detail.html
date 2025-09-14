@@ -1,0 +1,27 @@
+{% extends "core/base.html" %}
+
+{% block breadcrumbs %}
+<a href="{% url 'core:dashboard' %}">Studies</a> / {{ study.code }}
+{% endblock %}
+
+{% block content %}
+<h2>{{ study.code }} — {{ study.name }}</h2>
+
+<h3>Subjects</h3>
+{% if subjects %}
+  <table>
+    <tr><th>Subject ID</th><th>Enrolled</th><th></th></tr>
+    {% for subj in subjects %}
+      <tr>
+        <td>{{ subj.subject_id }}</td>
+        <td>{{ subj.enrolled_at }}</td>
+        <td>
+          <a href="{% url 'core:subject_detail' study.code subj.subject_id %}">View visits →</a>
+        </td>
+      </tr>
+    {% endfor %}
+  </table>
+{% else %}
+  <p>No subjects enrolled yet.</p>
+{% endif %}
+{% endblock %}

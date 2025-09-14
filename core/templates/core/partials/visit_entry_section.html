@@ -1,0 +1,32 @@
+{# core/partials/visit_entry_section.html #}
+<div id="visit-entry-section">
+  <h3>Enter data — {{ selected_crf.name }}</h3>
+
+  <form
+    method="post"
+    hx-post="{% url 'core:visit_entry' study.code subject.subject_id visit.id %}?crf={{ selected_crf.id }}"
+    hx-target="#visit-entry-section"
+    hx-swap="outerHTML"
+  >
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Save</button>
+  </form>
+
+  <h3>Current values</h3>
+  {% if entries %}
+    <table>
+      <tr><th>Order</th><th>Code</th><th>Label</th><th>Value</th></tr>
+      {% for e in entries %}
+        <tr>
+          <td>{{ e.field.order }}</td>
+          <td>{{ e.field.code }}</td>
+          <td>{{ e.field.name }}</td>
+          <td>{{ e.value_text }}</td>
+        </tr>
+      {% endfor %}
+    </table>
+  {% else %}
+    <p>No values saved yet for this CRF.</p>
+  {% endif %}
+</div>

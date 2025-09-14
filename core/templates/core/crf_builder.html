@@ -1,0 +1,66 @@
+{% extends "core/base.html" %}
+
+{% block breadcrumbs %}
+<a href="{% url 'core:dashboard' %}">Studies</a> /
+<a href="{% url 'core:study_detail' study.code %}">{{ study.code }}</a> /
+CRF Builder
+{% endblock %}
+
+{% block content %}
+<h2>CRF Builder — {{ study.code }}</h2>
+
+<h3>Create a new CRF</h3>
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Create CRF</button>
+</form>
+
+{% for c in crfs %}
+  <hr>
+  <h3>{{ c.name }} {% if not c.is_active %}<small>(inactive)</small>{% endif %}</h3>
+
+  <h4>Add field</h4>
+  <form method="post" action="{% url 'core:crf_field_add' study.code c.id %}">
+    {% csrf_token %}
+    <p><label>Name<br><input name="name" required></label></p>
+    <p><label>Code<br><input name="code" required placeholder="unique_code"></label></p>
+    <p><label>Type<br>
+      <select name="field_type">
+        <option value="text">Text</option>
+        <option value="int">Integer</option>
+        <option value="float">Float</option>
+        <option value="bool">Boolean</option>
+        <option value="choice">Choice</option>
+      </select>
+    </label></p>
+    <p><label>Choices (JSON for choice type)<br>
+      <textarea name="choices" rows="2" placeholder='["A","B"]'></textarea>
+    </label></p>
+    <p><label>Required <input type="checkbox" name="required"></label></p>
+    <p><label>Order <input type="number" name="order" value="0"></label></p>
+    <button type="submit">Add field</button>
+  </form>
+
+  <h4>Fields</h4>
+  {% if c.fields.all %}
+    <table>
+      <tr><th>Order</th><th>Code</th><th>Name</th><th>Type</th><th>Required</th><th>Choices</th></tr>
+      {% for f in c.fields.all %}
+        <tr>
+          <td>{{ f.order }}</td>
+          <td>{{ f.code }}</td>
+          <td>{{ f.name }}</td>
+          <td>{{ f.get_field_type_display }}</td>
+          <td>{{ f.required }}</td>
+          <td>
+            {% if f.choices %}{{ f.choices|safe }}{% else %}—{% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </table>
+  {% else %}
+    <p>No fields yet.</p>
+  {% endif %}
+{% endfor %}
+{% endblock %}

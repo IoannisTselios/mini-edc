@@ -1,0 +1,36 @@
+{% extends "core/base.html" %}
+
+{% block breadcrumbs %}
+<a href="{% url 'core:dashboard' %}">Studies</a> /
+<a href="{% url 'core:study_detail' study.code %}">{{ study.code }}</a> /
+<a href="{% url 'core:subject_detail' study.code subject.subject_id %}">Subject {{ subject.subject_id }}</a> /
+Visit {{ visit.name }} ({{ visit.visit_date }})
+{% endblock %}
+
+{% block content %}
+<h2>Visit: {{ visit.name }} — {{ visit.visit_date }}</h2>
+
+{% if crfs %}
+  <p><strong>CRFs:</strong>
+    {% for c in crfs %}
+      {% if selected_crf and c.id == selected_crf.id %}
+        <strong>[{{ c.name }}]</strong>
+        {% else %}
+        {# htmx: switch CRF without reloading full page #}
+        <a
+            hx-get="{% url 'core:visit_entry' study.code subject.subject_id visit.id %}?crf={{ c.id }}"
+            hx-target="#visit-entry-section"
+            hx-swap="outerHTML"
+            href="{% url 'core:visit_entry' study.code subject.subject_id visit.id %}?crf={{ c.id }}"
+        >{{ c.name }}</a>      
+      {% endif %}
+      {% if not forloop.last %} | {% endif %}
+    {% endfor %}
+  </p>
+
+  {# Include the visit-entry partial (form + current values) #}
+  {% include "core/partials/visit_entry_section.html" %}
+{% else %}
+  <p>No active CRFs defined for this study.</p>
+{% endif %}
+{% endblock %}
