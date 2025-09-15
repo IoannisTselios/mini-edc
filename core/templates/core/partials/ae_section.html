@@ -1,34 +1,31 @@
-{# core/partials/ae_section.html #}
+<div id="ae-section">
+  <h3>Adverse Events</h3>
 
-<h3>Adverse Events</h3>
+  <form
+    method="post"
+    action="{% url 'core:ae_create' study.code subject.subject_id %}"
+    hx-post="{% url 'core:ae_create' study.code subject.subject_id %}"
+    hx-target="#ae-section"
+    hx-swap="outerHTML"
+  >
+    {% csrf_token %}
+    {{ ae_form.as_p }}  
+    <button type="submit">Record adverse event</button>
+  </form>
 
-<form
-  method="post"
-  action="{% url 'core:ae_create' study.code subject.subject_id %}"
-  hx-post="{% url 'core:ae_create' study.code subject.subject_id %}"   
-  hx-target="#ae-section"                                              
-  hx-swap="outerHTML"                                                  
->
-  {% csrf_token %}
-  <p><label>Onset<br>{{ ae_form.onset }}</label></p>
-  <p><label>Severity<br>{{ ae_form.severity }}</label></p>
-  <p><label>Description<br>{{ ae_form.description }}</label></p>
-  <p><label>Related to study? {{ ae_form.related_to_study }}</label></p>
-  <button type="submit">Record adverse event</button>
-</form>
-
-{% if aevents %}
-  <table>
-    <tr><th>Onset</th><th>Severity</th><th>Description</th><th>Related</th></tr>
-    {% for ae in aevents %}
-      <tr>
-        <td>{{ ae.onset|date:"Y-m-d H:i" }}</td>
-        <td>{{ ae.severity|title }}</td>
-        <td>{{ ae.description }}</td>
-        <td>{{ ae.related_to_study }}</td>
-      </tr>
-    {% endfor %}
-  </table>
-{% else %}
-  <p>No adverse events recorded for this subject yet.</p>
-{% endif %}
+  {% if aevents %}
+    <table>
+      <tr><th>Onset</th><th>Severity</th><th>Description</th><th>Related</th></tr>
+      {% for ae in aevents %}
+        <tr>
+          <td>{{ ae.onset|date:"Y-m-d H:i" }}</td>
+          <td>{{ ae.severity|title }}</td>
+          <td>{{ ae.description }}</td>
+          <td>{{ ae.related_to_study }}</td>
+        </tr>
+      {% endfor %}
+    </table>
+  {% else %}
+    <p>No adverse events recorded for this subject yet.</p>
+  {% endif %}
+</div>
