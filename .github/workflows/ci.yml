@@ -5,15 +5,13 @@ on:
   pull_request:
 
 jobs:
-  test:
+  # Fast feedback: run Django checks + pytest on SQLite
+  test-sqlite:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
@@ -22,14 +20,13 @@ jobs:
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+          restore-keys: ${{ runner.os }}-pip-
 
       - name: Install deps
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          # If your project needs extra libs, add them above or here.
+          # (pytest, pytest-django, dj-database-url should be in requirements.txt)
 
       - name: Django sanity checks
         env:
@@ -38,8 +35,99 @@ jobs:
           python manage.py check
           python manage.py makemigrations --check --dry-run
 
-      - name: Run tests
+      - name: Run tests (SQLite)
         env:
           DJANGO_SETTINGS_MODULE: mini_edc.settings
+        run: pytest -q
+
+  # Closer to prod: run tests against Postgres service
+  test-postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: mini_edc
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U app -d mini_edc"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: ${{ runner.os }}-pip-
+
+      - name: Install deps
         run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          # needs psycopg installed via requirements.txt (psycopg[binary])
+
+      - name: Migrate (PG) and run tests
+        env:
+          DJANGO_SETTINGS_MODULE: mini_edc.settings
+          DATABASE_URL: postgres://app:app@localhost:5432/mini_edc
+        run: |
+          python manage.py check
+          python manage.py migrate --noinput
           pytest -q
+
+  # Build the container image; optionally push on main
+  build-image:
+    runs-on: ubuntu-latest
+    needs: [test-sqlite, test-postgres]   # only build if tests passed
+    permissions:
+      contents: read
+      packages: write   # needed if pushing to ghcr.io
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        if: github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract short SHA
+        id: vars
+        run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+
+      - name: Build (no push on PRs/branches)
+        if: github.ref != 'refs/heads/main'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: |
+            ghcr.io/${{ github.repository }}:commit-${{ steps.vars.outputs.SHORT_SHA }}
+
+      - name: Build & Push (only on main)
+        if: github.ref == 'refs/heads/main'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:${{ steps.vars.outputs.SHORT_SHA }}
